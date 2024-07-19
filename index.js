@@ -3,7 +3,7 @@ const mysql = require('mysql2/promise');
 require('dotenv').config();
 
 // const bot = new Telegraf(process.env.BOT_TOKEN);
-const bot = new Telegraf("7280968038:AAHXEwquefaykNFe-uj9Qhe_WOp2m78X4XU");
+const bot = new Telegraf("7477909248:AAEBXzu4axD_AZZZzlZTxXJfgAqkX4_StRg");
 
 // MySQL Connection
 
@@ -58,6 +58,7 @@ Available Commands:
 });
 
 // Start command
+
 bot.start(async (ctx) => {
     try {
         const connection = await db;
@@ -68,31 +69,60 @@ bot.start(async (ctx) => {
         if (rows.length === 0) {
             const referrerId = ctx.startPayload ? parseInt(ctx.startPayload, 10) : null;
             await connection.query('INSERT INTO users (telegram_id, referrer_id, username) VALUES (?, ?, ?)', [telegramId, referrerId, username]);
-            ctx.reply('Welcome! Please join the following channels to earn points:');
-            ctx.reply('እንኳን ደና መጡ! ሁሉንም ቻናሎች በመቀላቀል ሽልማት ያግኙ:በመቀጠል  "/check"  ሲሉ  "referal link" ያገኛሉ');
-        } else {
-            ctx.reply('Welcome back! Please use /check to see if you have joined all channels.');
-            ctx.reply('እንኳን ደና መጡ! ሁሉንም ቻናሎች በመቀላቀል ሽልማት ያግኙ:በመቀጠል  "/check"  ሲሉ  "referal link" ያገኛሉ');
+            
+            // Update the welcome message as per the screenshot
+                                const welcomeMessage = `
+                                - እንኳን ደና መጡ! ሁሉንም ቻናሎች በመቀላቀል ሽልማት ያግኙ:
+                                - በመቀጠል  "/check"  ሲሉ  "referal link" ያገኛሉ.
+                                - Welcome  please Join All the "Channels" to get a reward. 💎
+                                
+                                😊 Available Commands:
+                                /start - Start the bot
+                                /check - Check if you have joined all required channels
+                                /help - List all commands
+                                
+                            `;
+                            ctx.reply(welcomeMessage);
+                        } else {
+                            const welcomeBackMessage = `
+                            - እንኳን ደና መጡ! ሁሉንም ቻናሎች በመቀላቀል ሽልማት ያግኙ:
+                            - በመቀጠል  "/check"  ሲሉ  "referal link" ያገኛሉ.
+                            - Welcome back! Please use /check to see if you 
+                              have joined all channels. 💎
+        
+                            😊 Available Commands:
+                            /start - Start the bot
+                            /check - Check if you have joined all required channels
+                            /help - List all commands
+        
+                                `;
+                                ctx.reply(welcomeBackMessage);
         }
 
         const [channels] = await connection.query('SELECT * FROM channels');
         const channelLinks = channels.map(channel => channel.channel_link);
-        const channelButtons = channelLinks.map(link => [Markup.button.url(`🔗 ${link}`, link)]);
-
+        const channelButtons = channelLinks.map(link => Markup.button.url(`🔗 ${link}`, link));
 
         // Fetch ad types and links from the database
         const [ads] = await connection.query('SELECT ad_type FROM advertisements');
         const adTypes = ads.map(ad => ad.ad_type);
-        const adButtons = adTypes.map(type => [Markup.button.callback(type, type)]);
+        const adButtons = adTypes.map(type => Markup.button.callback(type, type));
 
-        const keyboard = Markup.keyboard([...adButtons, ...channelButtons]).resize().oneTime();
-        ctx.reply('Select an ad type or join a channel:', keyboard);
+        // Send channel links
+        ctx.reply('Please join the following channels:     እነዚህን ቻናሎች ይቀላቀሉ', Markup.inlineKeyboard(
+            channelButtons.map(button => [button])
+        ));
+
+        // Send ad types with keyboard
+        const keyboard = Markup.keyboard(adTypes).resize().oneTime();
+        ctx.reply('Select an ad type:', keyboard);
 
     } catch (error) {
         console.error('Error during start command:', error);
         ctx.reply('An error occurred. Please try again later.');
     }
 });
+
 // Check command
 bot.command('check', async (ctx) => {
     try {
@@ -248,7 +278,7 @@ bot.on('text', async (ctx) => {
             // User selected an ad type
             await sendAdLink(ctx, ctx.message.text);
         } else {
-            // ctx.reply('Unknown command. Please use /help to see the list of available commands.');
+            ctx.reply('Unknown command. Please use /help to see the list of available commands.');
         }
     }
 });
@@ -373,7 +403,7 @@ bot.on('text', async (ctx) => {
             // User selected an ad type
             await sendAdLink(ctx, ctx.message.text);
         } else {
-            // ctx.reply('Unknown command. Please use /help to see the list of available commands.');
+            ctx.reply('Unknown command. Please use /help to see the list of available commands.');
         }
     }
 });
