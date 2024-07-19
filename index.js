@@ -77,7 +77,8 @@ bot.start(async (ctx) => {
 
         const [channels] = await connection.query('SELECT * FROM channels');
         const channelLinks = channels.map(channel => channel.channel_link);
-        const channelButtons = channelLinks.map(link => [Markup.button.url(link, link)]);
+        const channelButtons = channelLinks.map(link => [Markup.button.url(`🔗 ${link}`, link)]);
+
 
         // Fetch ad types and links from the database
         const [ads] = await connection.query('SELECT ad_type FROM advertisements');
@@ -376,7 +377,6 @@ bot.on('text', async (ctx) => {
         }
     }
 });
-
 
 // -----------Remove Add ----------
 bot.action('remove_ad', isAdmin, async (ctx) => {
