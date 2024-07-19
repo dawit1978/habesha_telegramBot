@@ -2,15 +2,16 @@ const { Telegraf, Markup } = require('telegraf');
 const mysql = require('mysql2/promise');
 require('dotenv').config();
 
-const bot = new Telegraf(process.env.BOT_TOKEN);
+// const bot = new Telegraf(process.env.BOT_TOKEN);
+const bot = new Telegraf("7280968038:AAHXEwquefaykNFe-uj9Qhe_WOp2m78X4XU");
 
 // MySQL Connection
 
 const dbConfig = {
-    host: process.env.DB_HOST,
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    database: process.env.DB_NAME,
+    host: 'localhost',
+    user: 'root',
+    password: '',
+    database: 'habesha4339',
     waitForConnections: true,
     connectionLimit: 100,
     queueLimit: 0
@@ -30,8 +31,8 @@ async function initializeDatabase() {
 const db = initializeDatabase();
 
 // Admin credentials
-const adminId = process.env.ADMIN_ID; // Parse admin ID from .env file
-const adminPassword = process.env.ADMIN_PASSWORD;
+const adminId = 713655848; // Parse admin ID from .env file
+const adminPassword = "admin";
 
 let isAdminAuthenticated = false;
 const userStates = {}; // Store states for users
@@ -75,21 +76,22 @@ bot.start(async (ctx) => {
         }
 
         const [channels] = await connection.query('SELECT * FROM channels');
-        const channelList = channels.map(channel => `Join this channel: ${channel.channel_link}`).join('\n');
-        ctx.reply(channelList);
+        const channelLinks = channels.map(channel => channel.channel_link);
+        const channelButtons = channelLinks.map(link => [Markup.button.url(link, link)]);
 
         // Fetch ad types and links from the database
         const [ads] = await connection.query('SELECT ad_type FROM advertisements');
         const adTypes = ads.map(ad => ad.ad_type);
-        const keyboard = Markup.keyboard(adTypes.map(type => [type])).resize().oneTime();
-        ctx.reply('Select an ad type:', keyboard);
+        const adButtons = adTypes.map(type => [Markup.button.callback(type, type)]);
+
+        const keyboard = Markup.keyboard([...adButtons, ...channelButtons]).resize().oneTime();
+        ctx.reply('Select an ad type or join a channel:', keyboard);
 
     } catch (error) {
         console.error('Error during start command:', error);
         ctx.reply('An error occurred. Please try again later.');
     }
 });
-
 // Check command
 bot.command('check', async (ctx) => {
     try {
@@ -245,7 +247,7 @@ bot.on('text', async (ctx) => {
             // User selected an ad type
             await sendAdLink(ctx, ctx.message.text);
         } else {
-            ctx.reply('Unknown command. Please use /help to see the list of available commands.');
+            // ctx.reply('Unknown command. Please use /help to see the list of available commands.');
         }
     }
 });
@@ -370,7 +372,7 @@ bot.on('text', async (ctx) => {
             // User selected an ad type
             await sendAdLink(ctx, ctx.message.text);
         } else {
-            ctx.reply('Unknown command. Please use /help to see the list of available commands.');
+            // ctx.reply('Unknown command. Please use /help to see the list of available commands.');
         }
     }
 });
