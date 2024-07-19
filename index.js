@@ -31,11 +31,9 @@ async function initializeDatabase() {
 const db = initializeDatabase();
 
 // Admin credentials
-const adminId = 713655848; // Parse admin ID from .env file
 const adminPassword = "admin";
 
 let isAdminAuthenticated = false;
-const userStates = {}; // Store states for users
 
 // Middleware to check admin authentication
 function isAdmin(ctx, next) {
@@ -76,24 +74,12 @@ bot.start(async (ctx) => {
                                 - በመቀጠል  "/check"  ሲሉ  "referal link" ያገኛሉ.
                                 - Welcome  please Join All the "Channels" to get a reward. 💎
                                 
-                                😊 Available Commands:
-                                /start - Start the bot
-                                /check - Check if you have joined all required channels
-                                /help - List all commands
-                                
-                            `;
+                                `;
                             ctx.reply(welcomeMessage);
                         } else {
                             const welcomeBackMessage = `
                             - እንኳን ደና መጡ! ሁሉንም ቻናሎች በመቀላቀል ሽልማት ያግኙ:
                             - በመቀጠል  "/check"  ሲሉ  "referal link" ያገኛሉ.
-                            - Welcome back! Please use /check to see if you 
-                              have joined all channels. 💎
-        
-                            😊 Available Commands:
-                            /start - Start the bot
-                            /check - Check if you have joined all required channels
-                            /help - List all commands
         
                                 `;
                                 ctx.reply(welcomeBackMessage);
@@ -109,7 +95,7 @@ bot.start(async (ctx) => {
         const adButtons = adTypes.map(type => Markup.button.callback(type, type));
 
         // Send channel links
-        ctx.reply('Please join the following channels:     እነዚህን ቻናሎች ይቀላቀሉ', Markup.inlineKeyboard(
+        ctx.reply('- እንኳን ደና መጡ! ሁሉንም ቻናሎች በመቀላቀል ሽልማት ያግኙ:በመቀጠል  "/check"  ሲሉ  "referal link" ያገኛሉ.', Markup.inlineKeyboard(
             channelButtons.map(button => [button])
         ));
 
@@ -202,7 +188,7 @@ async function generateReferralLink(ctx, userId) {
 // Admin login command
 bot.command('admin', (ctx) => {
     const [_, password] = ctx.message.text.split(' ');
-    if (ctx.from.id === adminId && password === adminPassword) {
+    if (password === adminPassword) {
         ctx.reply('Admin authenticated. You can now use admin commands.', Markup.inlineKeyboard([
             [Markup.button.callback('Add Channel', 'add_channel')],
             [Markup.button.callback('Remove Channel', 'remove_channel')],
