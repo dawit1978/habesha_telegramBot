@@ -59,11 +59,14 @@ Available Commands:
 
 // Start command
 
+
+// Start command
+// Start command
 bot.start(async (ctx) => {
     try {
         const connection = await db;
         const telegramId = ctx.from.id;
-        const username = ctx.from.username || ''; // Get the username or use an empty string if not available
+        const username = ctx.from.username || '';
         const [rows] = await connection.query('SELECT * FROM users WHERE telegram_id = ?', [telegramId]);
 
         if (rows.length === 0) {
@@ -71,24 +74,20 @@ bot.start(async (ctx) => {
             await connection.query('INSERT INTO users (telegram_id, referrer_id, username) VALUES (?, ?, ?)', [telegramId, referrerId, username]);
 
             const welcomeMessage = `
-             - እንኳን ደና መጡ! ሁሉንም ቻናሎች በመቀላቀል ሽልማት ያግኙ:
-             - በመቀጠል  "Check"  ሲሉ  "referal link" ያገኛሉ.
-         `;
+                - እንኳን ደና መጡ! ሁሉንም ቻናሎች በመቀላቀል ሽልማት ያግኙ:
+                - በመቀጠል  "Check"  ሲሉ  "referal link" ያገኛሉ.
+            `;
             await ctx.reply(welcomeMessage, Markup.keyboard([
-                [Markup.button.text('Check')],
-                [Markup.button.text('Points')],
-                [Markup.button.text('Add Types')]
-            ]).resize().oneTime());
+                ['Check', 'Points', 'Add Types']
+            ]).resize());
         } else {
             const welcomeBackMessage = `
-             - እንኳን ደና መጡ! ሁሉንም ቻናሎች በመቀላቀል ሽልማት ያግኙ:
-             - በመቀጠል  "Check"  ሲሉ  "referal link" ያገኛሉ.
-         `;
+                - እንኳን ደና መጡ! ሁሉንም ቻናሎች በመቀላቀል ሽልማት ያግኙ:
+                - በመቀጠል  "Check"  ሲሉ  "referal link" ያገኛሉ.
+            `;
             await ctx.reply(welcomeBackMessage, Markup.keyboard([
-                [Markup.button.text('Check')],
-                [Markup.button.text('Points')],
-                [Markup.button.text('Add Types')]
-            ]).resize().oneTime());
+                ['Check', 'My Points', 'Top Users', 'Add Types']
+            ]).resize());
         }
 
         const [channels] = await connection.query('SELECT * FROM channels');
@@ -96,7 +95,7 @@ bot.start(async (ctx) => {
         const channelButtons = channelLinks.map(link => Markup.button.url(`🔗 ${link}`, link));
 
         // Send channel links
-        ctx.reply('Please join the following channels: እነዚህን ቻናሎች ይቀላቀሉ', Markup.inlineKeyboard(
+        ctx.reply('Please join the following channels:     እነዚህን ቻናሎች ይቀላቀሉ', Markup.inlineKeyboard(
             channelButtons.map(button => [button])
         ));
     } catch (error) {
@@ -106,29 +105,6 @@ bot.start(async (ctx) => {
 });
 
 // --------------------- ---------------------------
-bot.action('plus', async (ctx) => {
-    try {
-        const connection = await db;
-        // Fetch ad types from the database
-        const [ads] = await connection.query('SELECT ad_type FROM advertisements');
-        const adTypes = ads.map(ad => ad.ad_type);
-
-        if (adTypes.length === 0) {
-            ctx.reply('No ad types available.');
-            return;
-        }
-
-        // Create inline keyboard for ad types
-        const adTypeButtons = adTypes.map(type => Markup.button.callback(type, `ad_type_${type}`));
-        const keyboard = Markup.inlineKeyboard(adTypeButtons);
-
-        ctx.reply('Select an ad type:', keyboard);
-    } catch (error) {
-        console.error('Error handling plus action:', error);
-        ctx.reply('An error occurred. Please try again later.');
-    }
-});
-// -------------------- ----------------------------
 
 bot.action(/^ad_type_(.+)$/, async (ctx) => {
     const adType = ctx.match[1];
@@ -230,6 +206,58 @@ bot.hears('Points', async (ctx) => {
         ctx.reply('An error occurred. Please try again later.');
     }
 });
+
+// ------------------------- my point and top user ----------
+
+// Handle text message for "My Points" button
+bot.hears('My Points', async (ctx) => {
+    await handleMyPoints(ctx);
+});
+
+// Handle text message for "Top Users" button
+bot.hears('Top Users', async (ctx) => {
+    await handleTopUsers(ctx);
+});
+
+// Helper function for handling "My Points" button
+async function handleMyPoints(ctx) {
+    try {
+        const connection = await db;
+        const telegramId = ctx.from.id;
+        const [user] = await connection.query('SELECT points FROM users WHERE telegram_id = ?', [telegramId]);
+
+        if (user.length > 0) {
+            const userPoints = user[0].points;
+            ctx.reply(`Your points: ${userPoints}`);
+        } else {
+            ctx.reply('You need to start the bot first using /start.');
+        }
+    } catch (error) {
+        console.error('Error during my points command:', error);
+        ctx.reply('An error occurred. Please try again later.');
+    }
+}
+
+// Helper function for handling "Top Users" button
+async function handleTopUsers(ctx) {
+    try {
+        const connection = await db;
+        // Fetch top users by points, adjust limit as needed
+        const [rows] = await connection.query('SELECT username, points FROM users ORDER BY points DESC LIMIT 10');
+
+        if (rows.length > 0) {
+            const topUsersList = rows.map(user => `${user.username || 'User'}: ${user.points} points`).join('\n');
+            ctx.reply(`Top Users:\n${topUsersList}`);
+        } else {
+            ctx.reply('No users found.');
+        }
+    } catch (error) {
+        console.error('Error during top users command:', error);
+        ctx.reply('An error occurred. Please try again later.');
+    }
+}
+
+// -------------------------------------------------------------
 
 bot.hears('Add Types', async (ctx) => {
     try {
