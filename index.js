@@ -78,7 +78,13 @@ bot.start(async (ctx) => {
                 - በመቀጠል  "Check"  ሲሉ  "referal link" ያገኛሉ.
             `;
             await ctx.reply(welcomeMessage, Markup.keyboard([
-                ['Check', 'Points', 'Add Types']
+                [Markup.button.callback('Top Users', 'top_button')],  // Single button on top
+                [
+                    Markup.button.callback('Check', 'left_button'),
+                    Markup.button.callback('Points', 'right_button')
+                ],  // Two buttons in the second row (50% each)
+                [Markup.button.callback('Add Types', 'bottom_button')]
+                // ['Check', 'Points', 'Add Types']
             ]).resize());
         } else {
             const welcomeBackMessage = `
@@ -86,7 +92,12 @@ bot.start(async (ctx) => {
                 - በመቀጠል  "Check"  ሲሉ  "referal link" ያገኛሉ.
             `;
             await ctx.reply(welcomeBackMessage, Markup.keyboard([
-                ['Check', 'My Points', 'Top Users', 'Add Types']
+                [Markup.button.callback('Top Users', 'top_button')],  // Single button on top
+                [
+                    Markup.button.callback('Check', 'left_button'),
+                    Markup.button.callback('Points', 'right_button')
+                ],  // Two buttons in the second row (50% each)
+                [Markup.button.callback('Add Types', 'bottom_button')]
             ]).resize());
         }
 
@@ -182,13 +193,41 @@ bot.hears('Check', async (ctx) => {
     }
 });
 
+// ==========points -----------
+// Points command (show only the user's points)
 bot.hears('Points', async (ctx) => {
     try {
         const connection = await db;
         const telegramId = ctx.from.id;
 
+        // Fetch the user's points
+        const [rows] = await connection.query('SELECT points FROM users WHERE telegram_id = ?', [telegramId]);
+
+        if (rows.length > 0) {
+            const userPoints = rows[0].points;
+            ctx.reply(`Your points: ${userPoints}`);
+        } else {
+            ctx.reply('No user found.');
+        }
+    } catch (error) {
+        console.error('Error during points command:', error);
+        ctx.reply('An error occurred. Please try again later.');
+    }
+});
+
+
+
+// ------------------------- my point and top user ----------
+
+// Top Users command
+bot.hears('Top Users', async (ctx) => {
+    try {
+        const connection = await db;
+        const telegramId = ctx.from.id;
+
         // Fetch all users and their points
-        const [rows] = await connection.query('SELECT telegram_id, username, points FROM users');
+        const [rows] = await connection.query('SELECT telegram_id, username, points FROM users ORDER BY points DESC LIMIT 200');
+
 
         if (rows.length > 0) {
             // Find the current user's points
@@ -200,64 +239,17 @@ bot.hears('Points', async (ctx) => {
             ctx.reply(`Your points: ${userPoints}\n\nPoints of all users:\n${pointsList}`);
         } else {
             ctx.reply('No users found.');
-        }
+        }``
     } catch (error) {
         console.error('Error during points command:', error);
         ctx.reply('An error occurred. Please try again later.');
     }
 });
 
-// ------------------------- my point and top user ----------
 
-// Handle text message for "My Points" button
-bot.hears('My Points', async (ctx) => {
-    await handleMyPoints(ctx);
-});
 
-// Handle text message for "Top Users" button
-bot.hears('Top Users', async (ctx) => {
-    await handleTopUsers(ctx);
-});
 
-// Helper function for handling "My Points" button
-async function handleMyPoints(ctx) {
-    try {
-        const connection = await db;
-        const telegramId = ctx.from.id;
-        const [user] = await connection.query('SELECT points FROM users WHERE telegram_id = ?', [telegramId]);
-
-        if (user.length > 0) {
-            const userPoints = user[0].points;
-            ctx.reply(`Your points: ${userPoints}`);
-        } else {
-            ctx.reply('You need to start the bot first using /start.');
-        }
-    } catch (error) {
-        console.error('Error during my points command:', error);
-        ctx.reply('An error occurred. Please try again later.');
-    }
-}
-
-// Helper function for handling "Top Users" button
-async function handleTopUsers(ctx) {
-    try {
-        const connection = await db;
-        // Fetch top users by points, adjust limit as needed
-        const [rows] = await connection.query('SELECT username, points FROM users ORDER BY points DESC LIMIT 10');
-
-        if (rows.length > 0) {
-            const topUsersList = rows.map(user => `${user.username || 'User'}: ${user.points} points`).join('\n');
-            ctx.reply(`Top Users:\n${topUsersList}`);
-        } else {
-            ctx.reply('No users found.');
-        }
-    } catch (error) {
-        console.error('Error during top users command:', error);
-        ctx.reply('An error occurred. Please try again later.');
-    }
-}
-
-// -------------------------------------------------------------
+// ------Add types-------------------------------------------------------
 
 bot.hears('Add Types', async (ctx) => {
     try {
