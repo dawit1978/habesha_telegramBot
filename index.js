@@ -69,55 +69,88 @@ bot.start(async (ctx) => {
         if (rows.length === 0) {
             const referrerId = ctx.startPayload ? parseInt(ctx.startPayload, 10) : null;
             await connection.query('INSERT INTO users (telegram_id, referrer_id, username) VALUES (?, ?, ?)', [telegramId, referrerId, username]);
-            
-             // Update the welcome message as per the screenshot
-             const welcomeMessage = `
-             - እንኳን ደና መጡ! ሁሉንም ቻናሎች በመቀላቀል ሽልማት ያግኙ:
-             -በመቀጠል  "Check"  ሲሉ  "referal link" ያገኛሉ.
-         `;
-         await ctx.reply(welcomeMessage, Markup.inlineKeyboard([
-             [Markup.button.callback('Check', 'check')],
-             [Markup.button.callback('Points', 'points')]
-         ]));
-        //  await ctx.replyWithPhoto({source:'433pay.jpeg'});
-     } else {
-         const welcomeBackMessage = `
+
+            const welcomeMessage = `
              - እንኳን ደና መጡ! ሁሉንም ቻናሎች በመቀላቀል ሽልማት ያግኙ:
              - በመቀጠል  "Check"  ሲሉ  "referal link" ያገኛሉ.
          `;
-         await ctx.reply(welcomeBackMessage, Markup.inlineKeyboard([
-             [Markup.button.callback('Check', 'check')],
-             [Markup.button.callback('Points', 'points')]
-         ]));
-        //  await ctx.replyWithPhoto({source:'433pay.jpeg'});
-     }
+            await ctx.reply(welcomeMessage, Markup.keyboard([
+                [Markup.button.text('Check')],
+                [Markup.button.text('Points')],
+                [Markup.button.text('Add Types')]
+            ]).resize().oneTime());
+        } else {
+            const welcomeBackMessage = `
+             - እንኳን ደና መጡ! ሁሉንም ቻናሎች በመቀላቀል ሽልማት ያግኙ:
+             - በመቀጠል  "Check"  ሲሉ  "referal link" ያገኛሉ.
+         `;
+            await ctx.reply(welcomeBackMessage, Markup.keyboard([
+                [Markup.button.text('Check')],
+                [Markup.button.text('Points')],
+                [Markup.button.text('Add Types')]
+            ]).resize().oneTime());
+        }
 
         const [channels] = await connection.query('SELECT * FROM channels');
         const channelLinks = channels.map(channel => channel.channel_link);
         const channelButtons = channelLinks.map(link => Markup.button.url(`🔗 ${link}`, link));
 
-        // Fetch ad types and links from the database
-        const [ads] = await connection.query('SELECT ad_type FROM advertisements');
-        const adTypes = ads.map(ad => ad.ad_type);
-        const adButtons = adTypes.map(type => Markup.button.callback(type, type));
-
         // Send channel links
-        ctx.reply('Please join the following channels:     እነዚህን ቻናሎች ይቀላቀሉ', Markup.inlineKeyboard(
+        ctx.reply('Please join the following channels: እነዚህን ቻናሎች ይቀላቀሉ', Markup.inlineKeyboard(
             channelButtons.map(button => [button])
         ));
-
-        // Send ad types with keyboard
-        const keyboard = Markup.keyboard(adTypes).resize().oneTime();
-        ctx.reply('Select an ad type:', keyboard);
-
     } catch (error) {
         console.error('Error during start command:', error);
         ctx.reply('An error occurred. Please try again later.');
     }
 });
 
+// --------------------- ---------------------------
+bot.action('plus', async (ctx) => {
+    try {
+        const connection = await db;
+        // Fetch ad types from the database
+        const [ads] = await connection.query('SELECT ad_type FROM advertisements');
+        const adTypes = ads.map(ad => ad.ad_type);
+
+        if (adTypes.length === 0) {
+            ctx.reply('No ad types available.');
+            return;
+        }
+
+        // Create inline keyboard for ad types
+        const adTypeButtons = adTypes.map(type => Markup.button.callback(type, `ad_type_${type}`));
+        const keyboard = Markup.inlineKeyboard(adTypeButtons);
+
+        ctx.reply('Select an ad type:', keyboard);
+    } catch (error) {
+        console.error('Error handling plus action:', error);
+        ctx.reply('An error occurred. Please try again later.');
+    }
+});
+// -------------------- ----------------------------
+
+bot.action(/^ad_type_(.+)$/, async (ctx) => {
+    const adType = ctx.match[1];
+    try {
+        const connection = await db;
+        // Fetch ad link based on selected ad type
+        const [ad] = await connection.query('SELECT ad_link FROM advertisements WHERE ad_type = ?', [adType]);
+
+        if (ad.length > 0) {
+            ctx.reply(`Ad Link for ${adType}: ${ad[0].ad_link}`);
+        } else {
+            ctx.reply('No ad link found for the selected ad type.');
+        }
+    } catch (error) {
+        console.error('Error fetching ad link:', error);
+        ctx.reply('An error occurred. Please try again later.');
+    }
+});
+//-------------------- =-----------------------
+
 // Check command
-bot.action('check', async (ctx) => {
+bot.hears('Check', async (ctx) => {
     try {
         const connection = await db;
         const telegramId = ctx.from.id;
@@ -173,8 +206,7 @@ bot.action('check', async (ctx) => {
     }
 });
 
-// Points command
-bot.action('points', async (ctx) => {
+bot.hears('Points', async (ctx) => {
     try {
         const connection = await db;
         const telegramId = ctx.from.id;
@@ -198,6 +230,30 @@ bot.action('points', async (ctx) => {
         ctx.reply('An error occurred. Please try again later.');
     }
 });
+
+bot.hears('Add Types', async (ctx) => {
+    try {
+        const connection = await db;
+        // Fetch ad types from the database
+        const [ads] = await connection.query('SELECT ad_type FROM advertisements');
+        const adTypes = ads.map(ad => ad.ad_type);
+
+        if (adTypes.length === 0) {
+            ctx.reply('No ad types available.');
+            return;
+        }
+
+        // Create inline keyboard for ad types
+        const adTypeButtons = adTypes.map(type => Markup.button.callback(type, `ad_type_${type}`));
+        const keyboard = Markup.inlineKeyboard(adTypeButtons);
+
+        ctx.reply('Select an ad type:', keyboard);
+    } catch (error) {
+        console.error('Error handling add types command:', error);
+        ctx.reply('An error occurred. Please try again later.');
+    }
+});
+
 
 
 
