@@ -31,9 +31,11 @@ async function initializeDatabase() {
 const db = initializeDatabase();
 
 // Admin credentials
-const adminPassword = "admin";
+const adminId = 713655848; // Parse admin ID from .env file
+const adminPassword = "admin123";
 
 let isAdminAuthenticated = false;
+const userStates = {}; // Store states for users
 
 // Middleware to check admin authentication
 function isAdmin(ctx, next) {
@@ -50,6 +52,7 @@ bot.command('help', (ctx) => {
 Available Commands:
 /start - Start the bot
 /check - Check if you have joined all required channels
+/points - Check your points
 /help - List all commands
     `;
     ctx.reply(commands);
@@ -71,18 +74,18 @@ bot.start(async (ctx) => {
             // Update the welcome message as per the screenshot
                                 const welcomeMessage = `
                                 - እንኳን ደና መጡ! ሁሉንም ቻናሎች በመቀላቀል ሽልማት ያግኙ:
-                                - በመቀጠል  "/check"  ሲሉ  "referal link" ያገኛሉ.
-                                - Welcome  please Join All the "Channels" to get a reward. 💎
-                                
-                                `;
-                            ctx.reply(welcomeMessage);
+-በመቀጠል  "/check"  ሲሉ  "referal link" ያገኛሉ.
+                            `;
+                           await ctx.reply(welcomeMessage);
+                        //    await ctx.replyWithPhoto({source:'433pay.jpeg'});
+                           
                         } else {
                             const welcomeBackMessage = `
                             - እንኳን ደና መጡ! ሁሉንም ቻናሎች በመቀላቀል ሽልማት ያግኙ:
-                            - በመቀጠል  "/check"  ሲሉ  "referal link" ያገኛሉ.
-        
+- በመቀጠል  "/check"  ሲሉ  "referal link" ያገኛሉ.
                                 `;
-                                ctx.reply(welcomeBackMessage);
+                              await  ctx.reply(welcomeBackMessage);
+                            //   await ctx.replyWithPhoto({source:'433pay.jpeg'});
         }
 
         const [channels] = await connection.query('SELECT * FROM channels');
@@ -95,7 +98,7 @@ bot.start(async (ctx) => {
         const adButtons = adTypes.map(type => Markup.button.callback(type, type));
 
         // Send channel links
-        ctx.reply('- እንኳን ደና መጡ! ሁሉንም ቻናሎች በመቀላቀል ሽልማት ያግኙ:በመቀጠል  "/check"  ሲሉ  "referal link" ያገኛሉ.', Markup.inlineKeyboard(
+        ctx.reply('Please join the following channels:     እነዚህን ቻናሎች ይቀላቀሉ', Markup.inlineKeyboard(
             channelButtons.map(button => [button])
         ));
 
@@ -166,6 +169,35 @@ bot.command('check', async (ctx) => {
     }
 });
 
+// Points command
+bot.command('points', async (ctx) => {
+    try {
+        const connection = await db;
+        const telegramId = ctx.from.id;
+
+        // Fetch all users and their points
+        const [rows] = await connection.query('SELECT telegram_id, username, points FROM users');
+
+        if (rows.length > 0) {
+            // Find the current user's points
+            const user = rows.find(user => user.telegram_id === telegramId);
+            const userPoints = user ? user.points : 0;
+
+            // Format the response to include points of all users
+            const pointsList = rows.map(user => `${user.username || 'User'}: ${user.points} points`).join('\n');
+            ctx.reply(`Your points: ${userPoints}\n\nPoints of all users:\n${pointsList}`);
+        } else {
+            ctx.reply('No users found.');
+        }
+    } catch (error) {
+        console.error('Error during points command:', error);
+        ctx.reply('An error occurred. Please try again later.');
+    }
+});
+
+
+
+
 // Referral link generation (run this once when user joins all channels)
 async function generateReferralLink(ctx, userId) {
     try {
@@ -188,7 +220,7 @@ async function generateReferralLink(ctx, userId) {
 // Admin login command
 bot.command('admin', (ctx) => {
     const [_, password] = ctx.message.text.split(' ');
-    if (password === adminPassword) {
+    if (ctx.from.id === adminId && password === adminPassword) {
         ctx.reply('Admin authenticated. You can now use admin commands.', Markup.inlineKeyboard([
             [Markup.button.callback('Add Channel', 'add_channel')],
             [Markup.button.callback('Remove Channel', 'remove_channel')],
