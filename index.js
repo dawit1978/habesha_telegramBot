@@ -154,9 +154,9 @@ bot.action(/^ad_type_(.+)$/, async (ctx) => {
     }
 });
 
-// Check command
 
 // Check command
+
 bot.hears('Check', async (ctx) => {
     try {
         const connection = await db.getConnection();
@@ -194,26 +194,29 @@ bot.hears('Check', async (ctx) => {
             }
 
             if (joinedAllChannels) {
-                ctx.reply('You have joined all required channels.');
-                await generateReferralLink(ctx, userId);
+                const [referral] = await connection.query('SELECT referral_link FROM users WHERE id = ?', [userId]);
+                if (referral[0].referral_link) {
+                    ctx.reply('You already have a referral link: ' + referral[0].referral_link);
+                } else {
+                    await generateReferralLink(ctx, userId);
+                }
             } else {
                 let notJoinedMessage = 'You have not joined all required channels. Please join the following channels:\n';
                 notJoinedMessage += notJoinedChannels.map(link => `- ${link}`).join('\n');
 
-                // Call the start command
-                await bot.telegram.sendMessage(telegramId, `
-                    - እንኳን ደና መጡ! ሁሉንም ቻናሎች በመቀላቀል ሽልማት ያግኙ:
-                    - በመቀጠል  "Check"  ሲሉ  "referal link" ያገኛሉ.
-                `, Markup.keyboard([
-                    [Markup.button.callback('Top Users', 'top_button')],
-                    [
-                        Markup.button.callback('Check', 'left_button'),
-                        Markup.button.callback('Points', 'right_button')
-                    ],
-                    [Markup.button.callback('Add Types', 'bottom_button')]
-                ]).resize());
-
-                // Send the list of unjoined channels
+                 // Call the start command
+                 await bot.telegram.sendMessage(telegramId, `
+                 - እንኳን ደና መጡ! ሁሉንም ቻናሎች በመቀላቀል ሽልማት ያግኙ:
+                 - በመቀጠል  "Check"  ሲሉ  "referal link" ያገኛሉ.
+             `, Markup.keyboard([
+                 [Markup.button.callback('Top Users', 'top_button')],
+                 [
+                     Markup.button.callback('Check', 'left_button'),
+                     Markup.button.callback('Points', 'right_button')
+                 ],
+                 [Markup.button.callback('Add Types', 'bottom_button')]
+             ]).resize());
+                 // await ctx.replyWithPhoto({ source: "433pay.jpeg" });
                 ctx.reply(notJoinedMessage);
             }
         } else {
@@ -226,6 +229,7 @@ bot.hears('Check', async (ctx) => {
         ctx.reply('An error occurred. Please try again later.');
     }
 });
+
 
 
 // Points command (show only the user's points)
@@ -249,6 +253,7 @@ bot.hears('Points', async (ctx) => {
         ctx.reply('An error occurred. Please try again later.');
     }
 });
+
 
 // Top Users command
 bot.hears('Top Users', async (ctx) => {
@@ -309,9 +314,10 @@ async function generateReferralLink(ctx, userId) {
         connection.release();
     } catch (error) {
         console.error('Error generating referral link:', error);
-        ctx.reply('An error occurred. Please try again later.');
+        ctx.reply('An error occurred while generating the referral link. Please try again later.');
     }
 }
+
 
 
 // ------------Add types -------------
