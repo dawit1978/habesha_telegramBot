@@ -13,7 +13,7 @@ const dbConfig = {
     password: '',
     database: 'habesha4339',
     waitForConnections: true,
-    connectionLimit: 100,
+    connectionLimit: 20,
     queueLimit: 0
 };
 
@@ -31,7 +31,6 @@ async function initializeDatabase() {
 const db = initializeDatabase();
 
 // Admin credentials
-const adminId = 713655848; // Parse admin ID from .env file
 const adminPassword = "admin123";
 
 let isAdminAuthenticated = false;
@@ -117,7 +116,6 @@ bot.start(async (ctx) => {
     }
 });
 
-// Check command
 // Check command
 bot.action('check', async (ctx) => {
     try {
@@ -223,9 +221,10 @@ async function generateReferralLink(ctx, userId) {
 }
 
 // Admin login command
+// Admin login command
 bot.command('admin', (ctx) => {
     const [_, password] = ctx.message.text.split(' ');
-    if (ctx.from.id === adminId && password === adminPassword) {
+    if (password === adminPassword) {
         ctx.reply('Admin authenticated. You can now use admin commands.', Markup.inlineKeyboard([
             [Markup.button.callback('Add Channel', 'add_channel')],
             [Markup.button.callback('Remove Channel', 'remove_channel')],
@@ -240,9 +239,9 @@ bot.command('admin', (ctx) => {
     }
 });
 
+
 // Admin action handlers
-// Add Channel Command
-bot.action('add_channel', isAdmin, (ctx) => {
+bot.action('add_channel', isAdmin, async (ctx) => {
     userStates[ctx.from.id] = 'awaiting_channel_link';
     ctx.reply('Please enter the channel link to add (e.g., https://t.me/yourchannel):', Markup.forceReply());
 });
@@ -261,7 +260,7 @@ bot.on('text', async (ctx) => {
         }
 
         try {
-            const connection = await db;
+            const connection = await mysql.createConnection(dbConfig);
             const [existingChannels] = await connection.query('SELECT * FROM channels WHERE channel_link = ?', [channelLink]);
 
             if (existingChannels.length > 0) {
@@ -280,7 +279,7 @@ bot.on('text', async (ctx) => {
         const channelLink = ctx.message.text;
 
         try {
-            const connection = await db;
+            const connection = await mysql.createConnection(dbConfig);
             const [existingChannels] = await connection.query('SELECT * FROM channels WHERE channel_link = ?', [channelLink]);
 
             if (existingChannels.length > 0) {
