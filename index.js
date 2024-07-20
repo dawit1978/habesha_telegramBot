@@ -71,22 +71,27 @@ bot.start(async (ctx) => {
             const referrerId = ctx.startPayload ? parseInt(ctx.startPayload, 10) : null;
             await connection.query('INSERT INTO users (telegram_id, referrer_id, username) VALUES (?, ?, ?)', [telegramId, referrerId, username]);
             
-            // Update the welcome message as per the screenshot
-                                const welcomeMessage = `
-                                - እንኳን ደና መጡ! ሁሉንም ቻናሎች በመቀላቀል ሽልማት ያግኙ:
--በመቀጠል  "/check"  ሲሉ  "referal link" ያገኛሉ.
-                            `;
-                           await ctx.reply(welcomeMessage);
-                        //    await ctx.replyWithPhoto({source:'433pay.jpeg'});
-                           
-                        } else {
-                            const welcomeBackMessage = `
-                            - እንኳን ደና መጡ! ሁሉንም ቻናሎች በመቀላቀል ሽልማት ያግኙ:
-- በመቀጠል  "/check"  ሲሉ  "referal link" ያገኛሉ.
-                                `;
-                              await  ctx.reply(welcomeBackMessage);
-                            //   await ctx.replyWithPhoto({source:'433pay.jpeg'});
-        }
+             // Update the welcome message as per the screenshot
+             const welcomeMessage = `
+             - እንኳን ደና መጡ! ሁሉንም ቻናሎች በመቀላቀል ሽልማት ያግኙ:
+             -በመቀጠል  "Check"  ሲሉ  "referal link" ያገኛሉ.
+         `;
+         await ctx.reply(welcomeMessage, Markup.inlineKeyboard([
+             [Markup.button.callback('Check', 'check')],
+             [Markup.button.callback('Points', 'points')]
+         ]));
+        //  await ctx.replyWithPhoto({source:'433pay.jpeg'});
+     } else {
+         const welcomeBackMessage = `
+             - እንኳን ደና መጡ! ሁሉንም ቻናሎች በመቀላቀል ሽልማት ያግኙ:
+             - በመቀጠል  "Check"  ሲሉ  "referal link" ያገኛሉ.
+         `;
+         await ctx.reply(welcomeBackMessage, Markup.inlineKeyboard([
+             [Markup.button.callback('Check', 'check')],
+             [Markup.button.callback('Points', 'points')]
+         ]));
+        //  await ctx.replyWithPhoto({source:'433pay.jpeg'});
+     }
 
         const [channels] = await connection.query('SELECT * FROM channels');
         const channelLinks = channels.map(channel => channel.channel_link);
@@ -113,7 +118,8 @@ bot.start(async (ctx) => {
 });
 
 // Check command
-bot.command('check', async (ctx) => {
+// Check command
+bot.action('check', async (ctx) => {
     try {
         const connection = await db;
         const telegramId = ctx.from.id;
@@ -170,7 +176,7 @@ bot.command('check', async (ctx) => {
 });
 
 // Points command
-bot.command('points', async (ctx) => {
+bot.action('points', async (ctx) => {
     try {
         const connection = await db;
         const telegramId = ctx.from.id;
@@ -194,7 +200,6 @@ bot.command('points', async (ctx) => {
         ctx.reply('An error occurred. Please try again later.');
     }
 });
-
 
 
 
