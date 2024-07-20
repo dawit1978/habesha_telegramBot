@@ -283,10 +283,20 @@ bot.hears('Top Users', async (ctx) => {
 
 
 // Referral link generation (run this once when user joins all channels)
+function generateRandomString(length) {
+    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    let result = '';
+    for (let i = 0; i < length; i++) {
+        result += characters.charAt(Math.floor(Math.random() * characters.length));
+    }
+    return result;
+}
+
 async function generateReferralLink(ctx, userId) {
     try {
-        const connection = await db;
-        const referralLink = `https://t.me/${ctx.botInfo.username}?start=${userId}`;
+        const connection = await db.getConnection();
+        const referralCode = generateRandomString(10); // Generate a random string of 10 characters
+        const referralLink = `https://t.me/${ctx.botInfo.username}?start=${referralCode}`;
         await connection.query('UPDATE users SET referral_link = ?, points = points + 1 WHERE id = ?', [referralLink, userId]);
         ctx.reply('Here is your referral link: ' + referralLink);
 
@@ -295,11 +305,14 @@ async function generateReferralLink(ctx, userId) {
         if (user[0].referrer_id) {
             await connection.query('UPDATE users SET points = points + 1 WHERE id = ?', [user[0].referrer_id]);
         }
+
+        connection.release();
     } catch (error) {
         console.error('Error generating referral link:', error);
         ctx.reply('An error occurred. Please try again later.');
     }
 }
+
 
 // ------------Add types -------------
 
